@@ -24,6 +24,7 @@ Uses requests + BeautifulSoup only (no Playwright, no headless browser).
 """
 
 import re
+import json
 import logging
 import requests
 from datetime import date, timedelta
@@ -37,9 +38,8 @@ _BUSKER_ID = "dbc5b6bc-e22a-4e60-9fe4-f4d6a1aa17a4"
 NAC_PROFILE_URL = (
     "https://eservices.nac.gov.sg/Busking/busker/profile/" + _BUSKER_ID
 )
-_NAC_EVENTS_URL = (
-    "https://eservices.nac.gov.sg/Busking/events/buskers/" + _BUSKER_ID + "/public"
-)
+_NAC_EVENTS_URL      = "https://eservices.nac.gov.sg/Busking/events/buskers/" + _BUSKER_ID + "/public"
+_NAC_EVENTS_MORE_URL = _NAC_EVENTS_URL + "/more"
 
 HEADERS = {
     "User-Agent": (
@@ -183,11 +183,34 @@ def scrape_schedule(week_start: date, week_end: date) -> list[BuskEvent]:
     Fetch the NAC profile page and parse all booking cards.
     Returns events within [week_start, week_end], sorted by date+time.
     """
+    # First page
     log.info(f"Fetching {_NAC_EVENTS_URL}")
     resp = requests.get(_NAC_EVENTS_URL, headers=HEADERS, timeout=20)
     resp.raise_for_status()
+    try:
+        html = json.loads(resp.text)
+    except json.JSONDecodeError:
+        html = resp.text
 
-    all_events = _parse_html(resp.text)
+    all_events = _parse_html(html)
+
+    # Paginate via /more until empty
+    PAGE_SIZE = 8
+    skip = PAGE_SIZE
+    while True:
+        url = f"{_NAC_EVENTS_MORE_URL}?skip={skip}&take={PAGE_SIZE}"
+        log.info(f"Fetching {url}")
+        r = requests.get(url, headers=HEADERS, timeout=20)
+        r.raise_for_status()
+        try:
+            page_html = json.loads(r.text)
+        except json.JSONDecodeError:
+            page_html = r.text
+        page_events = _parse_html(page_html)
+        if not page_events:
+            break
+        all_events.extend(page_events)
+        skip += PAGE_SIZE
     log.info(f"Parsed {len(all_events)} total events from page")
 
     week_events = [e for e in all_events if week_start <= e.date <= week_end]

@@ -309,6 +309,8 @@ def consolidate_events(events: list[BuskEvent]) -> list[BuskEvent]:
 
 # ─── message builder ──────────────────────────────────────────────────────────
 
+_SIGNATURE = "\n\n—\n🎸 Official Mikew Community Hub: https://t.me/mikewmikewbeam"
+
 def build_day_message(events: list[BuskEvent], day: date, nac_url: str) -> str:
     """Format events for a single day into a Telegram HTML message."""
     day_label = f"<b>{DAY_NAMES[day.weekday()]} {day.day}/{day.month}/{day.year}</b>"
@@ -319,6 +321,7 @@ def build_day_message(events: list[BuskEvent], day: date, nac_url: str) -> str:
             "No bookings found for today.\n\n"
             f"Please check the <a href=\"{nac_url}\">NAC website</a> directly, "
             "or ask Kew in chat for updates! 🙏"
+            + _SIGNATURE
         )
 
     consolidated = consolidate_events(events)
@@ -332,7 +335,7 @@ def build_day_message(events: list[BuskEvent], day: date, nac_url: str) -> str:
         f"<a href=\"{nac_url}\">NAC website</a>, "
         "in case of cancellations/timing/location changes 🙏"
     )
-    return "\n".join(lines)
+    return "\n".join(lines) + _SIGNATURE
 
 
 def build_message(events: list[BuskEvent], week_start: date, week_end: date, nac_url: str) -> str:
@@ -363,6 +366,7 @@ def build_message(events: list[BuskEvent], week_start: date, week_end: date, nac
             "No upcoming bookings found for this week.\n\n"
             f"Please check the <a href=\"{nac_url}\">NAC website</a> directly, "
             "or ask Kew in chat for updates! 🙏"
+            + _SIGNATURE
         )
 
     consolidated = consolidate_events(events)
@@ -386,4 +390,4 @@ def build_message(events: list[BuskEvent], week_start: date, week_end: date, nac
         "in case of cancellations/timing/location changes 🙏"
     )
 
-    return "\n".join(lines)
+    return "\n".join(lines) + _SIGNATURE

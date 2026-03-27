@@ -1,7 +1,11 @@
 {
   "permissions": {
     "allow": [
-      "Bash(python -c \":*)"
+      "Bash(python -c \":*)",
+      "Bash(pip install:*)",
+      "Bash(python -c \"from dotenv import load_dotenv\")",
+      "Bash(python bot.py)",
+      "Bash(taskkill /F /IM python.exe)"
     ]
   }
 }

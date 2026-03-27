@@ -2,12 +2,14 @@
 bot.py — Telegram bot for MikewNACBot
 
 Commands:
-  /schedule  → this week's schedule (Mon–Sun)
+  /thisweek  → this week's schedule (Mon–Sun)
   /nextweek  → next week's schedule
+  /today     → today's schedule
   /help      → usage info
   /start     → same as /help
 
-Auto-posts every Friday at 20:00 SGT.
+Auto-posts every Friday at 20:00 SGT (next week's schedule).
+Auto-posts every day at 00:00 SGT (today's schedule).
 """
 
 import logging
@@ -20,7 +22,7 @@ from dotenv import load_dotenv
 from telegram import Update
 from telegram.ext import Application, CommandHandler, ContextTypes
 
-from scraper import NAC_PROFILE_URL, build_message, scrape_schedule
+from scraper import NAC_PROFILE_URL, build_day_message, build_message, scrape_schedule
 
 load_dotenv()
 
@@ -71,24 +73,44 @@ async def cmd_nextweek(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await _send_schedule(start, end, context, update.effective_chat.id)
 
 
+async def _send_day_schedule(day: date, context: ContextTypes.DEFAULT_TYPE, chat_id: int):
+    events  = scrape_schedule(day, day)
+    message = build_day_message(events, day, NAC_PROFILE_URL)
+    await context.bot.send_message(chat_id=chat_id, text=message, parse_mode="HTML")
+
+
+async def cmd_today(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    today = date.today()
+    await _send_day_schedule(today, context, update.effective_chat.id)
+
+
 async def cmd_help(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(
         "👋 Hey! I'm the Mikew NAC Bot.\n\n"
         "I track Mikew aka FattKew the OneBoyBand's busking schedule on NAC and post it here "
         "every Friday at 8 PM SGT so you're always ready for the week ahead.\n\n"
+        "Automagically pulling Mikew busking gigs from NAC! 🎸 Built by TheBooleanJulian.\n\n"
+        "Join the new official Mikew community server for live Mikew updates, exclusive media, and decentralised chatting: https://t.me/mikewmikewbeam\n\n"
         "Commands:\n"
-        "/schedule — this week's schedule\n"
+        "/thisweek — this week's schedule\n"
         "/nextweek — next week's schedule\n"
-        "/help — show this message\n\n"
-        "Built by TheBooleanJulian"
+        "/today — today's schedule\n"
+        "/help — show this message"
     )
 
 
-# ─── scheduled auto-post ──────────────────────────────────────────────────────
+# ─── scheduled auto-posts ─────────────────────────────────────────────────────
 
 async def _friday_post(app: Application):
     start, end = _next_week()
     await _send_schedule(start, end, app, CHAT_ID)
+
+
+async def _midnight_post(app: Application):
+    today = date.today()
+    events  = scrape_schedule(today, today)
+    message = build_day_message(events, today, NAC_PROFILE_URL)
+    await app.bot.send_message(chat_id=CHAT_ID, text=message, parse_mode="HTML")
 
 
 # ─── main ─────────────────────────────────────────────────────────────────────
@@ -98,8 +120,9 @@ def main():
 
     app.add_handler(CommandHandler("start",    cmd_help))
     app.add_handler(CommandHandler("help",     cmd_help))
-    app.add_handler(CommandHandler("schedule", cmd_schedule))
+    app.add_handler(CommandHandler("thisweek", cmd_schedule))
     app.add_handler(CommandHandler("nextweek", cmd_nextweek))
+    app.add_handler(CommandHandler("today",    cmd_today))
 
     scheduler = AsyncIOScheduler(timezone=SGT)
     scheduler.add_job(
@@ -110,8 +133,15 @@ def main():
         minute=0,
         args=[app],
     )
+    scheduler.add_job(
+        _midnight_post,
+        trigger="cron",
+        hour=0,
+        minute=0,
+        args=[app],
+    )
     scheduler.start()
-    log.info("Scheduler started — weekly post every Friday 20:00 SGT")
+    log.info("Scheduler started — weekly post every Friday 20:00 SGT, daily post every midnight SGT")
 
     log.info("Bot polling…")
     app.run_polling()

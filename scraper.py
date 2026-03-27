@@ -309,6 +309,32 @@ def consolidate_events(events: list[BuskEvent]) -> list[BuskEvent]:
 
 # ─── message builder ──────────────────────────────────────────────────────────
 
+def build_day_message(events: list[BuskEvent], day: date, nac_url: str) -> str:
+    """Format events for a single day into a Telegram HTML message."""
+    day_label = f"<b>{DAY_NAMES[day.weekday()]} {day.day}/{day.month}/{day.year}</b>"
+
+    if not events:
+        return (
+            f"📅 <b>Today's Busking Schedule</b>\n{day_label}\n\n"
+            "No bookings found for today.\n\n"
+            f"Please check the <a href=\"{nac_url}\">NAC website</a> directly, "
+            "or ask Kew in chat for updates! 🙏"
+        )
+
+    consolidated = consolidate_events(events)
+    lines = [f"📅 <b>Today's Busking Schedule</b>\n{day_label}\n"]
+    for ev in sorted(consolidated, key=lambda e: e.start_time):
+        lines.append(ev.location)
+        lines.append(_fmt_time_range(ev.start_time, ev.end_time))
+    lines.append("")
+    lines.append(
+        "Please ask Kew here in chat or check the "
+        f"<a href=\"{nac_url}\">NAC website</a>, "
+        "in case of cancellations/timing/location changes 🙏"
+    )
+    return "\n".join(lines)
+
+
 def build_message(events: list[BuskEvent], week_start: date, week_end: date, nac_url: str) -> str:
     """
     Format events into a Telegram HTML message.

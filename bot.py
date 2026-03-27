@@ -14,7 +14,7 @@ Auto-posts every day at 00:00 SGT (today's schedule).
 
 import logging
 import os
-from datetime import date, timedelta
+from datetime import date, datetime, timedelta
 
 import pytz
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
@@ -42,7 +42,7 @@ log = logging.getLogger(__name__)
 # ─── week helpers ─────────────────────────────────────────────────────────────
 
 def _this_week() -> tuple[date, date]:
-    today = date.today()
+    today = datetime.now(SGT).date()
     start = today - timedelta(days=today.weekday())   # Monday
     return start, start + timedelta(days=6)           # Sunday
 
@@ -80,7 +80,7 @@ async def _send_day_schedule(day: date, context: ContextTypes.DEFAULT_TYPE, chat
 
 
 async def cmd_today(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    today = date.today()
+    today = datetime.now(SGT).date()
     await _send_day_schedule(today, context, update.effective_chat.id)
 
 
@@ -107,7 +107,7 @@ async def _friday_post(app: Application):
 
 
 async def _midnight_post(app: Application):
-    today = date.today()
+    today = datetime.now(SGT).date()
     events  = scrape_schedule(today, today)
     message = build_day_message(events, today, NAC_PROFILE_URL)
     await app.bot.send_message(chat_id=CHAT_ID, text=message, parse_mode="HTML")

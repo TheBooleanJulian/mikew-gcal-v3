@@ -1,6 +1,9 @@
 """
 bot.py — Telegram bot for MikewNACBot
 
+Copyright © 2026 TheBooleanJulian. All rights reserved.
+Disclaimer: Built and maintained by Kew's official tech team. Not affiliated with NAC or any government entity.
+
 Commands:
   /thisweek  → this week's schedule (Mon–Sun)
   /nextweek  → next week's schedule
@@ -95,7 +98,10 @@ async def cmd_help(update: Update, context: ContextTypes.DEFAULT_TYPE):
         "/thisweek — this week's schedule\n"
         "/nextweek — next week's schedule\n"
         "/today — today's schedule\n"
-        "/help — show this message"
+        "/help — show this message\n\n"
+        "⚠️ Disclaimer: This bot is built and maintained by Kew's official tech team. Not affiliated with or endorsed by NAC or any government entity. "
+        "Schedule data is sourced from NAC eServices and may not always be accurate — always verify with Kew or NAC directly.\n"
+        "© 2026 TheBooleanJulian"
     )
 
 

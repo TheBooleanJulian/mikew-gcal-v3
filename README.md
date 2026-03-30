@@ -1,5 +1,11 @@
 # 🎵 MikewNACBot
 
+> **Disclaimer:** This bot is built and maintained by Kew's official tech team. It is not affiliated with, endorsed by, or associated with the National Arts Council (NAC) or any related government entities. Schedule data is sourced publicly from the NAC eServices website and may not always be accurate or up to date. Always verify directly with Kew or the [NAC website](https://eservices.nac.gov.sg/Busking/busker/profile/dbc5b6bc-e22a-4e60-9fe4-f4d6a1aa17a4).
+
+> **Copyright © 2026 TheBooleanJulian.** All rights reserved. Unauthorised redistribution or commercial use of this code is prohibited.
+
+---
+
 A Telegram bot that scrapes **FattKew / OneBoyBand**'s upcoming busking schedule from the NAC eServices website and posts it neatly to a Telegram chat.
 
 **Auto-posts every Friday at 8 PM SGT** with next week's schedule, and **every day at midnight SGT** with that day's schedule. Trigger manually anytime.

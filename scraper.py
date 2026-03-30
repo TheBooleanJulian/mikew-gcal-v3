@@ -1,6 +1,9 @@
 """
 scraper.py — NAC busking schedule scraper for FattKew / OneBoyBand
 
+Copyright © 2026 TheBooleanJulian. All rights reserved.
+Disclaimer: Built and maintained by Kew's official tech team. Not affiliated with NAC or any government entity.
+
 HTML structure (confirmed from real page source):
 
   <div class="col-md-6 col-lg-3 col-cuttor" id="div-booking-{uuid}">
@@ -309,7 +312,11 @@ def consolidate_events(events: list[BuskEvent]) -> list[BuskEvent]:
 
 # ─── message builder ──────────────────────────────────────────────────────────
 
-_SIGNATURE = "\n\n—\n🎸 Official Mikew Community Hub: https://t.me/mikewmikewbeam"
+_SIGNATURE = (
+    "\n\n—\n"
+    "🎸 Official Mikew Community Hub: https://t.me/mikewmikewbeam\n"
+    "⚠️ Built by Kew's official tech team · Not affiliated with NAC · © 2026 TheBooleanJulian"
+)
 
 def build_day_message(events: list[BuskEvent], day: date, nac_url: str) -> str:
     """Format events for a single day into a Telegram HTML message."""

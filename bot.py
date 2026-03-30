@@ -138,6 +138,8 @@ def main():
         hour=20,
         minute=0,
         args=[app],
+        misfire_grace_time=60,
+        max_instances=1,
     )
     scheduler.add_job(
         _midnight_post,
@@ -145,6 +147,8 @@ def main():
         hour=0,
         minute=0,
         args=[app],
+        misfire_grace_time=60,
+        max_instances=1,
     )
     scheduler.start()
     log.info("Scheduler started — weekly post every Friday 20:00 SGT, daily post every midnight SGT")

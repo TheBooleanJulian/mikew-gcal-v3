@@ -2,7 +2,7 @@
 scraper.py — NAC busking schedule scraper for FattKew / OneBoyBand
 
 Copyright © 2026 TheBooleanJulian. All rights reserved.
-Disclaimer: Built and maintained by Kew's official tech team. Not affiliated with NAC or any government entity.
+Disclaimer: Built and maintained by Kew's tech team. Not affiliated with NAC or any government entity.
 
 HTML structure (confirmed from real page source):
 
@@ -131,13 +131,18 @@ def _parse_date(s: str) -> Optional[date]:
 
 def _parse_time(s: str) -> Optional[str]:
     """
-    Parse NAC's quirky time format: "10:00:AM" / "06:00:PM"
-    Also handles standard:          "10:00 AM" / "10:00"
-    Returns 24h string "HH:MM".
+    Parse time strings into 24h "HH:MM".
+
+    Accepted formats:
+      "10:00:AM" / "06:00:PM"   ← NAC's actual format
+      "10:00 AM" / "10:00AM"    ← standard with AM/PM
+      "10am" / "2pm" / "10:30pm" ← shorthand (no colon before AM/PM)
+      "10:00"                   ← bare 24h
     """
     s = s.strip()
-    # "HH:MM:AM" or "HH:MM:PM"  ← NAC's actual format
-    m = re.match(r"(\d{1,2}):(\d{2}):?(AM|PM)", s, re.IGNORECASE)
+
+    # "HH:MM:AM", "HH:MM AM", "HH:MMAM"  (colon before AM/PM optional)
+    m = re.match(r"(\d{1,2}):(\d{2})\s*:?\s*(AM|PM)$", s, re.IGNORECASE)
     if m:
         h, mn, period = int(m.group(1)), int(m.group(2)), m.group(3).upper()
         if period == "PM" and h != 12:
@@ -145,10 +150,24 @@ def _parse_time(s: str) -> Optional[str]:
         elif period == "AM" and h == 12:
             h = 0
         return f"{h:02d}:{mn:02d}"
+
+    # "10am" / "2pm" / "10:30pm"  (minutes optional)
+    m = re.match(r"(\d{1,2})(?::(\d{2}))?\s*(AM|PM)$", s, re.IGNORECASE)
+    if m:
+        h  = int(m.group(1))
+        mn = int(m.group(2)) if m.group(2) else 0
+        period = m.group(3).upper()
+        if period == "PM" and h != 12:
+            h += 12
+        elif period == "AM" and h == 12:
+            h = 0
+        return f"{h:02d}:{mn:02d}"
+
     # Bare "HH:MM"
     m = re.match(r"(\d{1,2}):(\d{2})$", s)
     if m:
         return f"{int(m.group(1)):02d}:{int(m.group(2)):02d}"
+
     return None
 
 
@@ -314,8 +333,8 @@ def consolidate_events(events: list[BuskEvent]) -> list[BuskEvent]:
 
 _SIGNATURE = (
     "\n\n—\n"
-    "🎸 Official Mikew Community Hub: https://t.me/mikewmikewbeam\n"
-    "⚠️ Built by Kew's official tech team · Not affiliated with NAC · © 2026 TheBooleanJulian"
+    "🎸 Mikew Community Hub: https://t.me/mikewmikewbeam\n"
+    "⚠️ Built by Kew's tech team · Not affiliated with NAC · © 2026 TheBooleanJulian"
 )
 
 def build_day_message(events: list[BuskEvent], day: date, nac_url: str) -> str:

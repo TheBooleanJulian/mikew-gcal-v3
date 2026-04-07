@@ -252,44 +252,29 @@ docker build -t mikewinacbot . && docker run -d --name mikewinacbot --restart un
 
 ## Health Check & Status Endpoint
 
-The bot runs a **Flask web server on port 8080** that provides health check and status information.
+The bot runs a **branded status page on port 8080** (powered by TheBooleanJulian branding).
 
 ### Endpoints
 
-**Full Status:**
+**Status Page (HTML):**
 ```
 GET http://localhost:8080/
 ```
 
-Returns JSON with:
-- Bot status (`starting`, `running`, `error`)
-- Uptime duration
-- Last scheduled posts (Friday 8 PM, daily midnight)
-- Recent errors (last 5)
+Beautiful branded dashboard with:
+- 🎵 TheBooleanJulian branding (teal accent #00d4c8)
+- Dark modern theme (#060910)
+- Real-time metrics: uptime, last posts, command count, errors
+- Auto-refresh every 30 seconds
 
-Example response:
-```json
-{
-  "service": "MikewNACBot",
-  "status": "running",
-  "timestamp": "2026-04-08T15:30:45.123456+08:00",
-  "uptime": "12:34:56.789123",
-  "last_scheduled_posts": {
-    "friday_8pm": "2026-04-04T20:00:12.345678+08:00",
-    "daily_midnight": "2026-04-08T00:00:05.123456+08:00"
-  },
-  "recent_errors": []
-}
-```
-
-**Minimal Health Check (Kubernetes/monitoring):**
+**Health Check (JSON):**
 ```
 GET http://localhost:8080/healthz
 ```
 
 Returns:
-- `OK` with HTTP 200 if bot is running
-- `ERROR` with HTTP 503 if bot is down
+- `{"status": "ok"}` with HTTP 200 if running
+- HTTP 503 if down
 
 ### Zeabur Deployment
 
@@ -307,7 +292,10 @@ The bot is configured for deployment on **Zeabur** with `zeabur.json`:
    - `CHAT_ID`
    - `ADMIN_IDS` (optional)
 
-4. Access the status page at `https://mikew-nac-bot.zeabur.app/`
+4. Access the branded status page at `https://mikew-nac-bot.zeabur.app/`
+   - **Metric tracking:** Shows uptime, last scheduled posts, command usage
+   - **Error monitoring:** Displays recent errors if any
+   - **Live status:** Auto-refreshes every 30 seconds
 
 ---
 

@@ -26,12 +26,10 @@ import logging
 import os
 import threading
 from datetime import date, datetime, timedelta
-from json import dumps
 
 import pytz
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from dotenv import load_dotenv
-from flask import Flask, jsonify
 from telegram import Update
 from telegram.ext import Application, CommandHandler, ContextTypes
 
@@ -39,6 +37,11 @@ from scraper import NAC_PROFILE_URL, build_day_message, build_message, scrape_sc
 from overrides import (
     add_show, remove_show, modify_show, clear_override,
     load_overrides, apply_overrides, format_overrides_list,
+)
+from thebooleanjulian_bot_core.health import StatusServer
+from thebooleanjulian_bot_core.branding import (
+    BRAND_NAME, BRAND_GITHUB, BRAND_HANDLE, 
+    TEAL, BG_DARK, TEXT_WHITE, TEXT_MUTED,
 )
 
 load_dotenv()
@@ -49,44 +52,36 @@ ADMIN_IDS  = {int(x) for x in os.environ.get("ADMIN_IDS", "").split(",") if x.st
 
 SGT = pytz.timezone("Asia/Singapore")
 
-# ─── global bot state ─────────────────────────────────────────────────────────
+# ─── global bot state for status tracking ───────────────────────────────────
 bot_state = {
-    "status": "starting",
-    "uptime_start": None,
+    "start_time": datetime.now(SGT),
     "last_friday_post": None,
     "last_midnight_post": None,
     "errors": [],
+    "command_count": 0,
 }
 
-# ─── flask web server ─────────────────────────────────────────────────────────
-web_app = Flask(__name__)
+# ─── status server (branded health page) ────────────────────────────────────
+status_server = StatusServer(
+    bot_name="Mikew NAC Bot",
+    bot_username="@MikewNACBot",
+    bot_description="Scrapes FattKew's busking schedule from NAC and posts to Telegram",
+    bot_version="1.0.0",
+    icon_emoji="🎸",
+    accent_color=TEAL,
+)
 
 
-@web_app.route("/", methods=["GET"])
-def health():
-    """Health check and status endpoint."""
-    now = datetime.now(SGT)
-    uptime = None
-    if bot_state["uptime_start"]:
-        uptime = str(now - bot_state["uptime_start"])
-    
-    return jsonify({
-        "service": "MikewNACBot",
-        "status": bot_state["status"],
-        "timestamp": now.isoformat(),
-        "uptime": uptime,
-        "last_scheduled_posts": {
-            "friday_8pm": bot_state["last_friday_post"],
-            "daily_midnight": bot_state["last_midnight_post"],
-        },
-        "recent_errors": bot_state["errors"][-5:] if bot_state["errors"] else [],
-    }), 200, {"Content-Type": "application/json"}
-
-
-@web_app.route("/healthz", methods=["GET"])
-def healthz():
-    """Minimal health check for monitoring (Zeabur, Kubernetes, etc.)."""
-    return "OK" if bot_state["status"] == "running" else "ERROR", 200 if bot_state["status"] == "running" else 503
+def get_bot_metrics():
+    """Get current bot metrics for status page."""
+    return {
+        "Status": "🟢 Running",
+        "Last Friday Post": bot_state["last_friday_post"] or "Pending",
+        "Last Midnight Post": bot_state["last_midnight_post"] or "Pending",
+        "Uptime": str(datetime.now(SGT) - bot_state["start_time"]).split('.')[0],
+        "Commands Used": bot_state["command_count"],
+        "Recent Errors": len(bot_state["errors"]),
+    }
 
 
 logging.basicConfig(
@@ -126,11 +121,15 @@ async def _send_schedule(week_start: date, week_end: date, context: ContextTypes
 # ─── command handlers ─────────────────────────────────────────────────────────
 
 async def cmd_schedule(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Handle /thisweek command."""
+    bot_state["command_count"] += 1
     start, end = _this_week()
     await _send_schedule(start, end, context, update.effective_chat.id)
 
 
 async def cmd_nextweek(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Handle /nextweek command."""
+    bot_state["command_count"] += 1
     start, end = _next_week()
     await _send_schedule(start, end, context, update.effective_chat.id)
 
@@ -144,12 +143,15 @@ async def _send_day_schedule(day: date, context: ContextTypes.DEFAULT_TYPE, chat
 
 
 async def cmd_today(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Handle /today command."""
+    bot_state["command_count"] += 1
     today = datetime.now(SGT).date()
     await _send_day_schedule(today, context, update.effective_chat.id)
 
 
 async def cmd_help(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Send help message with available commands."""
+    bot_state["command_count"] += 1
     await update.message.reply_text(
         "👋 Hey! I'm the Mikew NAC Bot.\n\n"
         "I track Mikew aka FattKew the OneBoyBand's busking schedule on NAC and post it here "
@@ -364,7 +366,8 @@ async def _friday_post(app: Application):
     try:
         start, end = _next_week()
         await _send_schedule(start, end, app, CHAT_ID)
-        bot_state["last_friday_post"] = datetime.now(SGT).isoformat()
+        bot_state["last_friday_post"] = datetime.now(SGT).strftime("%a %Y-%m-%d %H:%M:%S")
+        log.info("✅ Friday post sent")
     except Exception as e:
         error_msg = f"Friday post failed: {str(e)}"
         log.error(error_msg)
@@ -379,7 +382,8 @@ async def _midnight_post(app: Application):
         events  = apply_overrides(events, today, today)
         message = build_day_message(events, today, NAC_PROFILE_URL)
         await app.bot.send_message(chat_id=CHAT_ID, text=message, parse_mode="HTML")
-        bot_state["last_midnight_post"] = datetime.now(SGT).isoformat()
+        bot_state["last_midnight_post"] = datetime.now(SGT).strftime("%a %Y-%m-%d %H:%M:%S")
+        log.info("✅ Midnight post sent")
     except Exception as e:
         error_msg = f"Midnight post failed: {str(e)}"
         log.error(error_msg)
@@ -390,7 +394,7 @@ async def _midnight_post(app: Application):
 
 def main():
     # Initialize bot state
-    bot_state["uptime_start"] = datetime.now(SGT)
+    bot_state["start_time"] = datetime.now(SGT)
     
     app = Application.builder().token(BOT_TOKEN).build()
 
@@ -428,15 +432,17 @@ def main():
     scheduler.start()
     log.info("Scheduler started — weekly post every Friday 20:00 SGT, daily post every midnight SGT")
 
-    # Start Flask web server in a background thread
-    flask_thread = threading.Thread(
-        target=lambda: web_app.run(host="0.0.0.0", port=8080, debug=False, use_reloader=False),
+    # Start branded status server in background thread
+    status_thread = threading.Thread(
+        target=lambda: status_server.start(
+            port=8080,
+            metrics_callback=get_bot_metrics,
+        ),
         daemon=True,
     )
-    flask_thread.start()
-    log.info("Health check endpoint available at http://0.0.0.0:8080/")
+    status_thread.start()
+    log.info("🎵 Status page available at http://0.0.0.0:8080/ · Built by TheBooleanJulian")
     
-    bot_state["status"] = "running"
     log.info("Bot polling…")
     app.run_polling()
 

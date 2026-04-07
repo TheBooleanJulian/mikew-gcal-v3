@@ -57,12 +57,14 @@ log = logging.getLogger(__name__)
 # ─── week helpers ─────────────────────────────────────────────────────────────
 
 def _this_week() -> tuple[date, date]:
+    """Get Monday and Sunday of the current week (SGT timezone)."""
     today = datetime.now(SGT).date()
     start = today - timedelta(days=today.weekday())   # Monday
     return start, start + timedelta(days=6)           # Sunday
 
 
 def _next_week() -> tuple[date, date]:
+    """Get Monday and Sunday of the next week (SGT timezone)."""
     start, _ = _this_week()
     start += timedelta(weeks=1)
     return start, start + timedelta(days=6)
@@ -71,6 +73,7 @@ def _next_week() -> tuple[date, date]:
 # ─── shared send helper ───────────────────────────────────────────────────────
 
 async def _send_schedule(week_start: date, week_end: date, context: ContextTypes.DEFAULT_TYPE, chat_id: int):
+    """Fetch NAC schedule for given date range, apply overrides, and send formatted message."""
     events  = scrape_schedule(week_start, week_end)
     events  = apply_overrides(events, week_start, week_end)
     message = build_message(events, week_start, week_end, NAC_PROFILE_URL)
@@ -90,6 +93,7 @@ async def cmd_nextweek(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 
 async def _send_day_schedule(day: date, context: ContextTypes.DEFAULT_TYPE, chat_id: int):
+    """Fetch NAC schedule for a single day, apply overrides, and send formatted message."""
     events  = scrape_schedule(day, day)
     events  = apply_overrides(events, day, day)
     message = build_day_message(events, day, NAC_PROFILE_URL)
@@ -102,26 +106,35 @@ async def cmd_today(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 
 async def cmd_help(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Send help message with available commands."""
     await update.message.reply_text(
         "👋 Hey! I'm the Mikew NAC Bot.\n\n"
         "I track Mikew aka FattKew the OneBoyBand's busking schedule on NAC and post it here "
         "every Friday at 8 PM SGT so you're always ready for the week ahead.\n\n"
         "Automagically pulling Mikew busking gigs from NAC! 🎸 Built by TheBooleanJulian.\n\n"
         "Join the Mikew community server for live Mikew updates, exclusive media, and decentralised chatting: https://t.me/mikewmikewbeam\n\n"
-        "Commands:\n"
+        "📅 <b>Public Commands:</b>\n"
         "/thisweek — this week's schedule\n"
         "/nextweek — next week's schedule\n"
         "/today — today's schedule\n"
         "/help — show this message\n\n"
+        "🔐 <b>Admin-Only Commands:</b> (for authorised users)\n"
+        "/addshow <date> <start> <end> <location...> — add custom show\n"
+        "/removeshow <date> <location...> — remove show\n"
+        "/modifyshow <date> <start> <end> <location...> — modify timing\n"
+        "/overrides — list all active overrides\n"
+        "/clearoverride <id> — remove specific override\n\n"
         "⚠️ Disclaimer: This bot is built and maintained by Kew's tech team. Not affiliated with or endorsed by NAC or any government entity. "
         "Schedule data is sourced from NAC eServices and may not always be accurate — always verify with Kew or NAC directly.\n"
-        "© 2026 TheBooleanJulian"
+        "© 2026 TheBooleanJulian",
+        parse_mode="HTML"
     )
 
 
 # ─── admin helpers ────────────────────────────────────────────────────────────
 
 def _is_admin(update: Update) -> bool:
+    """Check if the user is in the ADMIN_IDS list."""
     user = update.effective_user
     return user is not None and user.id in ADMIN_IDS
 

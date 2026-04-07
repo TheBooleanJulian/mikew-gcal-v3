@@ -138,7 +138,27 @@ The bot needs to know **which chat to auto-post to** on Friday nights.
 > Group IDs are **negative numbers** starting with `-100`, e.g. `-1001234567890`.
 > Personal chat IDs are positive numbers.
 
-### Step 4 — Configure environment variables
+### Step 3.5 — Get Admin User IDs (optional)
+
+If you want to use admin-only commands like `/addshow`, you need to specify which Telegram users are admins.
+
+**Option A — Using @userinfobot (easiest)**
+1. Message **[@userinfobot](https://t.me/userinfobot)** privately
+2. It will reply with your user ID, e.g. `123456789`
+3. Repeat for each admin user
+4. Collect them as comma-separated values: `123456789,987654321`
+
+**Option B — Using the Telegram API**
+1. Have each admin send a message to your bot (or in a group with the bot)
+2. Visit in your browser (replace with your token):
+   ```
+   https://api.telegram.org/bot<YOUR_TOKEN>/getUpdates
+   ```
+3. Look for `"from":{"id":` in the JSON — the number is the user's ID
+
+> User IDs are **positive numbers**, e.g. `123456789`.
+
+### Step 5 — Configure environment variables
 
 Copy the example file and fill in your values:
 

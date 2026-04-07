@@ -250,6 +250,67 @@ docker build -t mikewinacbot . && docker run -d --name mikewinacbot --restart un
 
 ---
 
+## Health Check & Status Endpoint
+
+The bot runs a **Flask web server on port 8080** that provides health check and status information.
+
+### Endpoints
+
+**Full Status:**
+```
+GET http://localhost:8080/
+```
+
+Returns JSON with:
+- Bot status (`starting`, `running`, `error`)
+- Uptime duration
+- Last scheduled posts (Friday 8 PM, daily midnight)
+- Recent errors (last 5)
+
+Example response:
+```json
+{
+  "service": "MikewNACBot",
+  "status": "running",
+  "timestamp": "2026-04-08T15:30:45.123456+08:00",
+  "uptime": "12:34:56.789123",
+  "last_scheduled_posts": {
+    "friday_8pm": "2026-04-04T20:00:12.345678+08:00",
+    "daily_midnight": "2026-04-08T00:00:05.123456+08:00"
+  },
+  "recent_errors": []
+}
+```
+
+**Minimal Health Check (Kubernetes/monitoring):**
+```
+GET http://localhost:8080/healthz
+```
+
+Returns:
+- `OK` with HTTP 200 if bot is running
+- `ERROR` with HTTP 503 if bot is down
+
+### Zeabur Deployment
+
+The bot is configured for deployment on **Zeabur** with `zeabur.json`:
+
+1. Connect your GitHub repository to Zeabur
+2. Zeabur will automatically:
+   - Read `zeabur.json` for configuration
+   - Build using `Dockerfile`
+   - Expose port 8080 for HTTP traffic
+   - Assign a public URL (e.g., `https://mikew-nac-bot.zeabur.app`)
+
+3. Set environment variables in Zeabur dashboard:
+   - `BOT_TOKEN`
+   - `CHAT_ID`
+   - `ADMIN_IDS` (optional)
+
+4. Access the status page at `https://mikew-nac-bot.zeabur.app/`
+
+---
+
 ### Option C — Deploy to Zeabur (recommended for 24/7)
 
 Zeabur is the simplest way to keep the bot running permanently in the cloud. It's the same platform used for the NASA APOD bot.

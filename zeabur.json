@@ -1,0 +1,19 @@
+{
+  "build": {
+    "docker": {
+      "dockerfile": "Dockerfile"
+    }
+  },
+  "serverless": false,
+  "services": {
+    "bot": {
+      "dockerfile": "Dockerfile",
+      "ports": [
+        {
+          "port": 8080,
+          "type": "http"
+        }
+      ]
+    }
+  }
+}

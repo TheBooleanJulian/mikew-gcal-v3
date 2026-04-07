@@ -24,11 +24,14 @@ Auto-posts every day at 00:00 SGT (today's schedule).
 
 import logging
 import os
+import threading
 from datetime import date, datetime, timedelta
+from json import dumps
 
 import pytz
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from dotenv import load_dotenv
+from flask import Flask, jsonify
 from telegram import Update
 from telegram.ext import Application, CommandHandler, ContextTypes
 
@@ -45,6 +48,46 @@ CHAT_ID    = int(os.environ["CHAT_ID"])
 ADMIN_IDS  = {int(x) for x in os.environ.get("ADMIN_IDS", "").split(",") if x.strip()}
 
 SGT = pytz.timezone("Asia/Singapore")
+
+# ─── global bot state ─────────────────────────────────────────────────────────
+bot_state = {
+    "status": "starting",
+    "uptime_start": None,
+    "last_friday_post": None,
+    "last_midnight_post": None,
+    "errors": [],
+}
+
+# ─── flask web server ─────────────────────────────────────────────────────────
+web_app = Flask(__name__)
+
+
+@web_app.route("/", methods=["GET"])
+def health():
+    """Health check and status endpoint."""
+    now = datetime.now(SGT)
+    uptime = None
+    if bot_state["uptime_start"]:
+        uptime = str(now - bot_state["uptime_start"])
+    
+    return jsonify({
+        "service": "MikewNACBot",
+        "status": bot_state["status"],
+        "timestamp": now.isoformat(),
+        "uptime": uptime,
+        "last_scheduled_posts": {
+            "friday_8pm": bot_state["last_friday_post"],
+            "daily_midnight": bot_state["last_midnight_post"],
+        },
+        "recent_errors": bot_state["errors"][-5:] if bot_state["errors"] else [],
+    }), 200, {"Content-Type": "application/json"}
+
+
+@web_app.route("/healthz", methods=["GET"])
+def healthz():
+    """Minimal health check for monitoring (Zeabur, Kubernetes, etc.)."""
+    return "OK" if bot_state["status"] == "running" else "ERROR", 200 if bot_state["status"] == "running" else 503
+
 
 logging.basicConfig(
     format="%(asctime)s | %(levelname)s | %(name)s | %(message)s",
@@ -317,21 +360,38 @@ async def cmd_clearoverride(update: Update, context: ContextTypes.DEFAULT_TYPE):
 # ─── scheduled auto-posts ─────────────────────────────────────────────────────
 
 async def _friday_post(app: Application):
-    start, end = _next_week()
-    await _send_schedule(start, end, app, CHAT_ID)
+    """Auto-post next week's schedule every Friday at 8 PM SGT."""
+    try:
+        start, end = _next_week()
+        await _send_schedule(start, end, app, CHAT_ID)
+        bot_state["last_friday_post"] = datetime.now(SGT).isoformat()
+    except Exception as e:
+        error_msg = f"Friday post failed: {str(e)}"
+        log.error(error_msg)
+        bot_state["errors"].append({"timestamp": datetime.now(SGT).isoformat(), "message": error_msg})
 
 
 async def _midnight_post(app: Application):
-    today   = datetime.now(SGT).date()
-    events  = scrape_schedule(today, today)
-    events  = apply_overrides(events, today, today)
-    message = build_day_message(events, today, NAC_PROFILE_URL)
-    await app.bot.send_message(chat_id=CHAT_ID, text=message, parse_mode="HTML")
+    """Auto-post today's schedule every day at midnight SGT."""
+    try:
+        today   = datetime.now(SGT).date()
+        events  = scrape_schedule(today, today)
+        events  = apply_overrides(events, today, today)
+        message = build_day_message(events, today, NAC_PROFILE_URL)
+        await app.bot.send_message(chat_id=CHAT_ID, text=message, parse_mode="HTML")
+        bot_state["last_midnight_post"] = datetime.now(SGT).isoformat()
+    except Exception as e:
+        error_msg = f"Midnight post failed: {str(e)}"
+        log.error(error_msg)
+        bot_state["errors"].append({"timestamp": datetime.now(SGT).isoformat(), "message": error_msg})
 
 
 # ─── main ─────────────────────────────────────────────────────────────────────
 
 def main():
+    # Initialize bot state
+    bot_state["uptime_start"] = datetime.now(SGT)
+    
     app = Application.builder().token(BOT_TOKEN).build()
 
     app.add_handler(CommandHandler("start",         cmd_help))
@@ -368,6 +428,15 @@ def main():
     scheduler.start()
     log.info("Scheduler started — weekly post every Friday 20:00 SGT, daily post every midnight SGT")
 
+    # Start Flask web server in a background thread
+    flask_thread = threading.Thread(
+        target=lambda: web_app.run(host="0.0.0.0", port=8080, debug=False, use_reloader=False),
+        daemon=True,
+    )
+    flask_thread.start()
+    log.info("Health check endpoint available at http://0.0.0.0:8080/")
+    
+    bot_state["status"] = "running"
     log.info("Bot polling…")
     app.run_polling()
 

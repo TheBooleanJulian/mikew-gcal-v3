@@ -12,4 +12,7 @@ COPY . .
 
 ENV PYTHONUNBUFFERED=1
 
+# Expose port 8080 for the health check endpoint
+EXPOSE 8080
+
 CMD ["python", "bot.py"]

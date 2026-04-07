@@ -1,6 +1,6 @@
 # 🎵 MikewNACBot
 
-> **Disclaimer:** This bot is built and maintained by Kew's official tech team. It is not affiliated with, endorsed by, or associated with the National Arts Council (NAC) or any related government entities. Schedule data is sourced publicly from the NAC eServices website and may not always be accurate or up to date. Always verify directly with Kew or the [NAC website](https://eservices.nac.gov.sg/Busking/busker/profile/dbc5b6bc-e22a-4e60-9fe4-f4d6a1aa17a4).
+> **Disclaimer:** This bot is built and maintained by Kew's tech team. It is not affiliated with, endorsed by, or associated with the National Arts Council (NAC) or any related government entities. Schedule data is sourced publicly from the NAC eServices website and may not always be accurate or up to date. Always verify directly with Kew or the [NAC website](https://eservices.nac.gov.sg/Busking/busker/profile/dbc5b6bc-e22a-4e60-9fe4-f4d6a1aa17a4).
 
 > **Copyright © 2026 TheBooleanJulian.** All rights reserved. Unauthorised redistribution or commercial use of this code is prohibited.
 
@@ -9,6 +9,8 @@
 A Telegram bot that scrapes **FattKew / OneBoyBand**'s upcoming busking schedule from the NAC eServices website and posts it neatly to a Telegram chat.
 
 **Auto-posts every Friday at 8 PM SGT** with next week's schedule, and **every day at midnight SGT** with that day's schedule. Trigger manually anytime.
+
+The bot includes **admin-only commands** for managing schedule overrides (e.g., adding/removing shows not listed on NAC) and **automatic override application** to ensure accurate postings.
 
 ---
 
@@ -61,9 +63,19 @@ in case of cancellations/timing/location changes 🙏
 | `/help` | Show help message |
 | `/start` | Same as `/help` |
 
+**Admin-only commands** (require `ADMIN_IDS` environment variable):
+| Command | What it does |
+|---|---|
+| `/addshow <date> <start> <end> <location...>` | Add a custom show override |
+| `/removeshow <date> <location...>` | Remove a show override |
+| `/modifyshow <date> <newstart> <newend> <location...>` | Modify an existing show override |
+| `/overrides` | List all active overrides |
+| `/clearoverride <id>` | Clear a specific override by ID |
+
 The bot also:
 - **Auto-posts every Friday at 8 PM SGT** with next week's Mon–Sun schedule
 - **Auto-posts every day at midnight SGT** with that day's schedule
+- **Applies schedule overrides** automatically to all schedule queries and auto-posts
 
 ---
 
@@ -73,10 +85,12 @@ The bot also:
 mikewinacbot/
 ├── bot.py            Telegram bot + APScheduler (Friday + daily midnight cron)
 ├── scraper.py        HTTP scraper (requests + BeautifulSoup)
+├── overrides.py      Schedule override management (add/remove/modify shows)
 ├── requirements.txt  Python dependencies
 ├── Dockerfile        Container definition
 ├── zeabur.json       Zeabur deployment config
 ├── .env.example      Environment variable template
+├── .env              Environment variables (create from .env.example)
 └── README.md         This file
 ```
 
@@ -136,6 +150,7 @@ Edit `.env`:
 ```env
 BOT_TOKEN=7123456789:AAHxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 CHAT_ID=-1001234567890
+ADMIN_IDS=123456789,987654321  # Optional: comma-separated Telegram user IDs for admin commands
 ```
 
 ---
@@ -157,9 +172,11 @@ pip install -r requirements.txt
 # 3. Set environment variables
 export BOT_TOKEN=your_token_here
 export CHAT_ID=your_chat_id_here
+export ADMIN_IDS=123456789,987654321  # Optional
 # Or on Windows:
 # set BOT_TOKEN=your_token_here
 # set CHAT_ID=your_chat_id_here
+# set ADMIN_IDS=123456789,987654321
 
 # 4. Run the bot
 python bot.py
@@ -191,6 +208,7 @@ docker run -d \
   --restart unless-stopped \
   -e BOT_TOKEN=your_token_here \
   -e CHAT_ID=your_chat_id_here \
+  -e ADMIN_IDS=123456789,987654321 \
   mikewinacbot
 ```
 
@@ -246,6 +264,7 @@ Zeabur is the simplest way to keep the bot running permanently in the cloud. It'
      |-----|-------|
      | `BOT_TOKEN` | Your BotFather token |
      | `CHAT_ID` | Your group chat ID |
+     | `ADMIN_IDS` | Comma-separated Telegram user IDs (optional) |
    - Click **Redeploy** to apply
 
 4. **Confirm it's running**
@@ -289,6 +308,22 @@ The scraper:
 6. **Formats** into the Telegram message
 
 > **Note on time format:** NAC uses `10:00:AM` (colon before AM/PM) rather than the standard `10:00 AM`. The scraper handles this correctly.
+
+---
+
+## Schedule Overrides
+
+The bot supports **schedule overrides** to add, remove, or modify shows that aren't listed on the NAC website (e.g., private gigs, cancellations, or changes).
+
+- **Automatic application:** Overrides are automatically applied to all schedule queries (`/thisweek`, `/nextweek`, `/today`) and auto-posts
+- **Persistence:** Overrides are stored in `overrides.json` and persist across restarts
+- **Admin-only:** Only users listed in `ADMIN_IDS` can manage overrides
+- **Commands:** Use `/addshow`, `/removeshow`, `/modifyshow`, `/overrides`, and `/clearoverride`
+
+**Example usage:**
+- Add a show: `/addshow 2026-04-15 19:00 21:00 Private Venue`
+- List overrides: `/overrides`
+- Remove by ID: `/clearoverride 1`
 
 ---
 

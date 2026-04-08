@@ -38,9 +38,9 @@ from overrides import (
     add_show, remove_show, modify_show, clear_override,
     load_overrides, apply_overrides, format_overrides_list,
 )
-from thebooleanjulian_bot_core.health import StatusServer
-from thebooleanjulian_bot_core.branding import (
-    BRAND_NAME, BRAND_GITHUB, BRAND_HANDLE, 
+from health import (
+    StatusServer,
+    BRAND_NAME, BRAND_GITHUB, BRAND_HANDLE,
     TEAL, BG_DARK, TEXT_WHITE, TEXT_MUTED,
 )
 

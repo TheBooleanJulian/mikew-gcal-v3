@@ -40,17 +40,20 @@ class StatusServer:
         self.accent_color = accent_color
         self.port = port
         self._metrics_fn = None
+        self._sections_fn = None
 
         self._app = Flask(__name__)
         self._app.add_url_rule("/healthz", "healthz", self._healthz)
         self._app.add_url_rule("/", "status", self._status_page)
 
-    def start(self, port: int = None, metrics_callback=None):
+    def start(self, port: int = None, metrics_callback=None, sections_callback=None):
         """Start the HTTP server in the current thread (blocking)."""
         if port is not None:
             self.port = port
         if metrics_callback is not None:
             self._metrics_fn = metrics_callback
+        if sections_callback is not None:
+            self._sections_fn = sections_callback
         self._run()
 
     def _run(self):
@@ -66,6 +69,15 @@ class StatusServer:
         metrics = self._metrics_fn() if self._metrics_fn else {}
         rows = "".join(
             f"<tr><td>{k}</td><td>{v}</td></tr>" for k, v in metrics.items()
+        )
+
+        sections = self._sections_fn() if self._sections_fn else []
+        section_cards = "".join(
+            f"""
+    <div class="card schedule-card">
+      <h2>{s['title']}</h2>
+      <div class="schedule-body">{s['html'].replace(chr(10), '<br>')}</div>
+    </div>""" for s in sections
         )
         html = f"""<!DOCTYPE html>
 <html lang="en">
@@ -83,8 +95,8 @@ class StatusServer:
       display: flex;
       flex-direction: column;
       align-items: center;
-      justify-content: center;
       padding: 2rem;
+      gap: 1.25rem;
     }}
     .card {{
       background: #161b22;
@@ -93,6 +105,28 @@ class StatusServer:
       padding: 2rem 2.5rem;
       max-width: 520px;
       width: 100%;
+    }}
+    .schedule-card h2 {{
+      font-size: 1rem;
+      font-weight: 700;
+      color: {self.accent_color};
+      margin-bottom: 1rem;
+    }}
+    .schedule-body {{
+      font-size: 0.85rem;
+      line-height: 1.6;
+      color: {TEXT_WHITE};
+      word-wrap: break-word;
+    }}
+    .schedule-body b {{ color: {self.accent_color}; }}
+    .schedule-body a {{ color: {self.accent_color}; }}
+    .stack {{
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 1.25rem;
+      width: 100%;
+      max-width: 520px;
     }}
     .header {{
       display: flex;
@@ -124,24 +158,26 @@ class StatusServer:
   </style>
 </head>
 <body>
-  <div class="card">
-    <div class="header">
-      <span class="emoji">{self.icon_emoji}</span>
-      <div>
-        <h1>{self.bot_name}</h1>
-        <div class="username">{self.bot_username}</div>
+  <div class="stack">
+    <div class="card">
+      <div class="header">
+        <span class="emoji">{self.icon_emoji}</span>
+        <div>
+          <h1>{self.bot_name}</h1>
+          <div class="username">{self.bot_username}</div>
+        </div>
       </div>
-    </div>
-    <p class="desc">{self.bot_description}</p>
-    <table>
-      <tbody>
-        {rows}
-      </tbody>
-    </table>
-    <div class="footer">
-      <span>v{self.bot_version}</span>
-      <span>Built by <a href="{BRAND_GITHUB}" target="_blank">{BRAND_NAME}</a></span>
-    </div>
+      <p class="desc">{self.bot_description}</p>
+      <table>
+        <tbody>
+          {rows}
+        </tbody>
+      </table>
+      <div class="footer">
+        <span>v{self.bot_version}</span>
+        <span>Built by <a href="{BRAND_GITHUB}" target="_blank">{BRAND_NAME}</a></span>
+      </div>
+    </div>{section_cards}
   </div>
 </body>
 </html>"""

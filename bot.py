@@ -84,6 +84,27 @@ def get_bot_metrics():
     }
 
 
+def get_schedule_sections():
+    """Fetch the latest today / this week / next week schedules for the status page."""
+    today = datetime.now(SGT).date()
+    week_start, week_end = _this_week()
+    next_start, next_end = _next_week()
+
+    sections = []
+    for title, start, end, builder in [
+        ("Today", today, today, lambda evs: build_day_message(evs, today, NAC_PROFILE_URL)),
+        ("This Week", week_start, week_end, lambda evs: build_message(evs, week_start, week_end, NAC_PROFILE_URL)),
+        ("Next Week", next_start, next_end, lambda evs: build_message(evs, next_start, next_end, NAC_PROFILE_URL)),
+    ]:
+        try:
+            events = apply_overrides(scrape_schedule(start, end), start, end)
+            sections.append({"title": title, "html": builder(events)})
+        except Exception as e:
+            sections.append({"title": title, "html": f"⚠️ Failed to load: {e}"})
+
+    return sections
+
+
 logging.basicConfig(
     format="%(asctime)s | %(levelname)s | %(name)s | %(message)s",
     datefmt="%Y-%m-%d %H:%M:%S",
@@ -437,6 +458,7 @@ def main():
         target=lambda: status_server.start(
             port=8080,
             metrics_callback=get_bot_metrics,
+            sections_callback=get_schedule_sections,
         ),
         daemon=True,
     )

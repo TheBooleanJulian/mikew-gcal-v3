@@ -1,69 +1,62 @@
-# 🎵 MikewNACBot
+<div align="center">
 
-> **Disclaimer:** This bot is built and maintained by Kew's tech team. It is not affiliated with, endorsed by, or associated with the National Arts Council (NAC) or any related government entities. Schedule data is sourced publicly from the NAC eServices website and may not always be accurate or up to date. Always verify directly with Kew or the [NAC website](https://eservices.nac.gov.sg/Busking/busker/profile/dbc5b6bc-e22a-4e60-9fe4-f4d6a1aa17a4).
+# MikewNACBot
+
+**Telegram bot that scrapes FattKew / OneBoyBand's NAC busking schedule and posts it to a group chat — automatically or on demand.**
+
+![Python](https://img.shields.io/badge/-Python-3776AB?logo=python&logoColor=white)
+![Telegram](https://img.shields.io/badge/-Telegram-26A5E4?logo=telegram&logoColor=white)
+![Zeabur](https://img.shields.io/badge/-Zeabur-6C5CE7)
+![License](https://img.shields.io/badge/license-Proprietary-red.svg)
+
+![Hero](assets/hero.png)
+
+</div>
+
+---
+
+> **Disclaimer:** This bot is built and maintained by TheBooleanJulian. It is not affiliated with, endorsed by, or associated with the National Arts Council (NAC) or any related government entities. Schedule data is sourced publicly from the NAC eServices website and may not always be accurate or up to date. Always verify directly with Kew or the [NAC website](https://eservices.nac.gov.sg/Busking/busker/profile/dbc5b6bc-e22a-4e60-9fe4-f4d6a1aa17a4).
 
 > **Copyright © 2026 TheBooleanJulian.** All rights reserved. Unauthorised redistribution or commercial use of this code is prohibited.
 
 ---
 
-A Telegram bot that scrapes **FattKew / OneBoyBand**'s upcoming busking schedule from the NAC eServices website and posts it neatly to a Telegram chat.
+## What it does
 
-**Auto-posts every Friday at 8 PM SGT** with next week's schedule, and **every day at midnight SGT** with that day's schedule. Trigger manually anytime.
+MikewNACBot scrapes FattKew / OneBoyBand's upcoming busking schedule from the NAC eServices website and formats it into clean Telegram messages. It auto-posts next week's full schedule every Friday at 8 PM SGT, and today's schedule every day at midnight SGT — so the group chat stays up to date without anyone having to lift a finger. Manual commands let anyone pull the current or next week's schedule on demand, and admins can add, remove, or modify show entries that aren't listed on NAC.
 
-The bot includes **admin-only commands** for managing schedule overrides (e.g., adding/removing shows not listed on NAC) and **automatic override application** to ensure accurate postings.
+## Features
 
----
+- Auto-posts next week's Mon–Sun schedule every **Friday at 8 PM SGT**
+- Auto-posts today's schedule every day at **midnight SGT**
+- Manual commands: `/today`, `/thisweek`, `/nextweek`
+- Admin-only schedule overrides — add, remove, or modify shows not on NAC
+- Overrides are applied automatically to all queries and auto-posts
+- Flask health check endpoint (`/healthz`) and branded status page on port 8080
+- Containerised via Docker, deployed on Zeabur
 
-## Example Output
+## Tech Stack
 
-**Weekly (`/thisweek`, `/nextweek`, Friday auto-post):**
-```
-📅 Upcoming Busking Schedule
-23 Mar – 29 Mar 2026
-
-MON 23/3
-MRT STATION - CCL HARBOURFRONT
-10am-12pm
-AMK HUB
-6pm-9pm
-
-TUE 24/3
-MRT STATION - CCL HARBOURFRONT
-10am-2pm
-KAMPUNG ADMIRALTY
-5pm-7pm
-
-Please ask Kew here in chat or check the NAC website,
-in case of cancellations/timing/location changes 🙏
-```
-
-**Daily (`/today`, midnight auto-post):**
-```
-📅 Today's Busking Schedule
-MON 23/3/2026
-
-MRT STATION - CCL HARBOURFRONT
-10am-12pm
-AMK HUB
-6pm-9pm
-
-Please ask Kew here in chat or check the NAC website,
-in case of cancellations/timing/location changes 🙏
-```
-
----
+| Layer | Choice |
+|---|---|
+| Bot | python-telegram-bot 21.6 (polling) + APScheduler |
+| Scraper | requests + BeautifulSoup4 |
+| Scheduler | APScheduler 3.10.4 |
+| Health check | Flask 3.1 |
+| Hosting | Zeabur (Docker, GitHub CI/CD) |
 
 ## Commands
 
 | Command | What it does |
 |---|---|
-| `/thisweek` | Post **this week's** schedule (Mon–Sun) |
-| `/nextweek` | Post **next week's** schedule |
-| `/today` | Post **today's** schedule |
+| `/thisweek` | Post this week's schedule (Mon–Sun) |
+| `/nextweek` | Post next week's schedule |
+| `/today` | Post today's schedule |
 | `/help` | Show help message |
 | `/start` | Same as `/help` |
 
-**Admin-only commands** (require `ADMIN_IDS` environment variable):
+**Admin-only** (requires `ADMIN_IDS`):
+
 | Command | What it does |
 |---|---|
 | `/addshow <date> <start> <end> <location...>` | Add a custom show override |
@@ -72,363 +65,68 @@ in case of cancellations/timing/location changes 🙏
 | `/overrides` | List all active overrides |
 | `/clearoverride <id>` | Clear a specific override by ID |
 
-The bot also:
-- **Auto-posts every Friday at 8 PM SGT** with next week's Mon–Sun schedule
-- **Auto-posts every day at midnight SGT** with that day's schedule
-- **Applies schedule overrides** automatically to all schedule queries and auto-posts
-
----
-
-## Files
-
-```
-mikewinacbot/
-├── bot.py            Telegram bot + APScheduler (Friday + daily midnight cron)
-├── scraper.py        HTTP scraper (requests + BeautifulSoup)
-├── overrides.py      Schedule override management (add/remove/modify shows)
-├── requirements.txt  Python dependencies
-├── Dockerfile        Container definition
-├── zeabur.json       Zeabur deployment config
-├── .env.example      Environment variable template
-├── .env              Environment variables (create from .env.example)
-└── README.md         This file
-```
-
----
-
-## Setup
-
-### Step 1 — Create the Telegram bot
-
-1. Open Telegram and message **[@BotFather](https://t.me/BotFather)**
-2. Send `/newbot`
-3. When prompted for a name, enter: `MikewNAC Bot`
-4. When prompted for a username, enter: `MikewNACBot`
-5. BotFather will reply with a **token** that looks like:
-   ```
-   7123456789:AAHxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-   ```
-   Copy this — it's your `BOT_TOKEN`.
-
-### Step 2 — Add the bot to your group
-
-1. Open the Telegram group you want the bot to post in
-2. Tap the group name → **Add Members** → search `@MikewNACBot` → Add
-3. Make the bot an **admin** so it can send messages freely:
-   - Tap the group name → **Edit** → **Administrators** → Add Administrator → select `@MikewNACBot`
-   - Permissions needed: **Post Messages** only
-
-### Step 3 — Get the Chat ID
-
-The bot needs to know **which chat to auto-post to** on Friday nights.
-
-**Option A — Using @userinfobot (easiest)**
-1. Add **[@userinfobot](https://t.me/userinfobot)** to the group temporarily
-2. It will print the group's numeric ID, e.g. `-1001234567890`
-3. Remove @userinfobot from the group
-
-**Option B — Using the Telegram API**
-1. Send any message to the group
-2. Visit in your browser (replace with your token):
-   ```
-   https://api.telegram.org/bot<YOUR_TOKEN>/getUpdates
-   ```
-3. Look for `"chat":{"id":` in the JSON — the number is your `CHAT_ID`
-
-> Group IDs are **negative numbers** starting with `-100`, e.g. `-1001234567890`.
-> Personal chat IDs are positive numbers.
-
-### Step 3.5 — Get Admin User IDs (optional)
-
-If you want to use admin-only commands like `/addshow`, you need to specify which Telegram users are admins.
-
-**Option A — Using @userinfobot (easiest)**
-1. Message **[@userinfobot](https://t.me/userinfobot)** privately
-2. It will reply with your user ID, e.g. `123456789`
-3. Repeat for each admin user
-4. Collect them as comma-separated values: `123456789,987654321`
-
-**Option B — Using the Telegram API**
-1. Have each admin send a message to your bot (or in a group with the bot)
-2. Visit in your browser (replace with your token):
-   ```
-   https://api.telegram.org/bot<YOUR_TOKEN>/getUpdates
-   ```
-3. Look for `"from":{"id":` in the JSON — the number is the user's ID
-
-> User IDs are **positive numbers**, e.g. `123456789`.
-
-### Step 5 — Configure environment variables
-
-Copy the example file and fill in your values:
+## Quick Start
 
 ```bash
-cp .env.example .env
-```
-
-Edit `.env`:
-```env
-BOT_TOKEN=7123456789:AAHxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-CHAT_ID=-1001234567890
-ADMIN_IDS=123456789,987654321  # Optional: comma-separated Telegram user IDs for admin commands
-```
-
----
-
-## Running the Bot
-
-### Option A — Run locally with Python
-
-**Requirements:** Python 3.11+
-
-```bash
-# 1. Create and activate a virtual environment
-python3 -m venv venv
-source venv/bin/activate          # Windows: venv\Scripts\activate
-
-# 2. Install dependencies
+git clone <repo>
+cd mikew-gcal-v3
 pip install -r requirements.txt
-
-# 3. Set environment variables
-export BOT_TOKEN=your_token_here
-export CHAT_ID=your_chat_id_here
-export ADMIN_IDS=123456789,987654321  # Optional
-# Or on Windows:
-# set BOT_TOKEN=your_token_here
-# set CHAT_ID=your_chat_id_here
-# set ADMIN_IDS=123456789,987654321
-
-# 4. Run the bot
+cp .env.example .env
+# Fill in BOT_TOKEN, CHAT_ID, and optionally ADMIN_IDS in .env
 python bot.py
 ```
 
-You should see:
-```
-2026-03-23 20:00:00 | INFO | __main__ | Scheduler started — weekly post every Friday 20:00 SGT, daily post every midnight SGT
-2026-03-23 20:00:00 | INFO | __main__ | Bot polling…
-```
+## Configuration
 
-Test it by sending `/thisweek` or `/today` in the Telegram group.
-
-**To stop:** Press `Ctrl+C`
-
----
-
-### Option B — Run locally with Docker
-
-**Requirements:** [Docker](https://docs.docker.com/get-docker/) installed
-
-```bash
-# 1. Build the image
-docker build -t mikewinacbot .
-
-# 2. Run with environment variables
-docker run -d \
-  --name mikewinacbot \
-  --restart unless-stopped \
-  -e BOT_TOKEN=your_token_here \
-  -e CHAT_ID=your_chat_id_here \
-  -e ADMIN_IDS=123456789,987654321 \
-  mikewinacbot
-```
-
-**Useful Docker commands:**
-```bash
-# Check it's running
-docker ps
-
-# View live logs
-docker logs -f mikewinacbot
-
-# Stop the bot
-docker stop mikewinacbot
-
-# Restart after code changes
-docker stop mikewinacbot && docker rm mikewinacbot
-docker build -t mikewinacbot . && docker run -d --name mikewinacbot --restart unless-stopped -e BOT_TOKEN=... -e CHAT_ID=... mikewinacbot
-```
-
----
-
-## Health Check & Status Endpoint
-
-The bot runs a **branded status page on port 8080** (powered by TheBooleanJulian branding).
-
-### Endpoints
-
-**Status Page (HTML):**
-```
-GET http://localhost:8080/
-```
-
-Beautiful branded dashboard with:
-- 🎵 TheBooleanJulian branding (teal accent #00d4c8)
-- Dark modern theme (#060910)
-- Real-time metrics: uptime, last posts, command count, errors
-- Auto-refresh every 30 seconds
-
-**Health Check (JSON):**
-```
-GET http://localhost:8080/healthz
-```
-
-Returns:
-- `{"status": "ok"}` with HTTP 200 if running
-- HTTP 503 if down
-
-### Zeabur Deployment
-
-The bot is configured for deployment on **Zeabur** with `zeabur.json`:
-
-1. Connect your GitHub repository to Zeabur
-2. Zeabur will automatically:
-   - Read `zeabur.json` for configuration
-   - Build using `Dockerfile`
-   - Expose port 8080 for HTTP traffic
-   - Assign a public URL (e.g., `https://mikew-nac-bot.zeabur.app`)
-
-3. Set environment variables in Zeabur dashboard:
-   - `BOT_TOKEN`
-   - `CHAT_ID`
-   - `ADMIN_IDS` (optional)
-
-4. Access the branded status page at `https://mikew-nac-bot.zeabur.app/`
-   - **Metric tracking:** Shows uptime, last scheduled posts, command usage
-   - **Error monitoring:** Displays recent errors if any
-   - **Live status:** Auto-refreshes every 30 seconds
-
----
-
-### Option C — Deploy to Zeabur (recommended for 24/7)
-
-Zeabur is the simplest way to keep the bot running permanently in the cloud. It's the same platform used for the NASA APOD bot.
-
-**Prerequisites:**
-- GitHub account
-- Zeabur account ([zeabur.com](https://zeabur.com)) — free tier works
-
-**Steps:**
-
-1. **Push code to GitHub**
-   ```bash
-   git init
-   git add .
-   git commit -m "Initial commit"
-   # Create a new repo on github.com, then:
-   git remote add origin https://github.com/YOUR_USERNAME/mikewinacbot.git
-   git push -u origin main
-   ```
-
-2. **Create a new Zeabur project**
-   - Go to [dash.zeabur.com](https://dash.zeabur.com)
-   - Click **New Project**
-   - Click **Deploy New Service** → **GitHub**
-   - Select your `mikewinacbot` repository
-   - Zeabur auto-detects the `Dockerfile` and starts building
-
-3. **Set environment variables**
-   - In your Zeabur service, go to the **Variables** tab
-   - Add:
-     | Key | Value |
-     |-----|-------|
-     | `BOT_TOKEN` | Your BotFather token |
-     | `CHAT_ID` | Your group chat ID |
-     | `ADMIN_IDS` | Comma-separated Telegram user IDs (optional) |
-   - Click **Redeploy** to apply
-
-4. **Confirm it's running**
-   - Check the **Logs** tab — you should see `Bot polling…`
-   - Send `/thisweek` or `/today` in your Telegram group
-
-**Updating the bot after code changes:**
-```bash
-git add .
-git commit -m "Update scraper"
-git push
-```
-Zeabur auto-redeploys on every push.
-
----
-
-## How the Scraper Works
-
-The NAC profile page loads all booking cards as **static HTML** — no JavaScript rendering needed. Each card has this structure:
-
-```html
-<div class="col-cuttor">
-  <div class="dash-bx">
-    <ul class="dash-bx-times">
-      <li>Mon, 23 March</li>
-      <li><span>10:00:AM - 11:00:AM</span></li>
-      <li class="address">
-        <a href="...">MRT STATION - CCL HARBOURFRONT</a>
-      </li>
-    </ul>
-  </div>
-</div>
-```
-
-The scraper:
-1. **Fetches** the page with `requests`
-2. **Parses** every `div.col-cuttor` card with `BeautifulSoup`
-3. **Extracts** date, time range, and location from each card
-4. **Consolidates** consecutive 1-hour slots at the same venue into a single block (e.g. two `10:00–11:00` + `11:00–12:00` slots become `10am–12pm`)
-5. **Filters** to the requested Mon–Sun window
-6. **Formats** into the Telegram message
-
-> **Note on time format:** NAC uses `10:00:AM` (colon before AM/PM) rather than the standard `10:00 AM`. The scraper handles this correctly.
-
----
-
-## Schedule Overrides
-
-The bot supports **schedule overrides** to add, remove, or modify shows that aren't listed on the NAC website (e.g., private gigs, cancellations, or changes).
-
-- **Automatic application:** Overrides are automatically applied to all schedule queries (`/thisweek`, `/nextweek`, `/today`) and auto-posts
-- **Persistence:** Overrides are stored in `overrides.json` and persist across restarts
-- **Admin-only:** Only users listed in `ADMIN_IDS` can manage overrides
-- **Commands:** Use `/addshow`, `/removeshow`, `/modifyshow`, `/overrides`, and `/clearoverride`
-
-**Example usage:**
-- Add a show: `/addshow 2026-04-15 19:00 21:00 Private Venue`
-- List overrides: `/overrides`
-- Remove by ID: `/clearoverride 1`
-
----
-
-## Troubleshooting
-
-**Bot doesn't respond to commands**
-- Make sure the bot is an admin in the group
-- Check that `BOT_TOKEN` is correct — no extra spaces
-- View logs: `docker logs mikewinacbot`
-
-**Auto-post not firing**
-- The Friday post runs at 20:00 **SGT (UTC+8)** and the daily post runs at 00:00 **SGT**. Timezone is handled automatically by pytz.
-- Verify the bot is still running: `docker ps` or check Zeabur logs
-
-**"No upcoming bookings found"**
-- The NAC page only shows bookings that have been confirmed. If Kew hasn't booked slots yet, the page will be empty for that period.
-- You can verify by visiting the [NAC profile page](https://eservices.nac.gov.sg/Busking/busker/profile/dbc5b6bc-e22a-4e60-9fe4-f4d6a1aa17a4) directly.
-
-**Scraper returns wrong week/day**
-- `/thisweek` → current Mon–Sun
-- `/nextweek` → following Mon–Sun
-- `/today` → today only
-- The Friday auto-post always sends **next week**; the midnight auto-post sends **today**
-
-**NAC page structure changes**
-- If NAC updates their website, the `col-cuttor` / `dash-bx-times` selectors in `scraper.py` may need updating
-- Check the `_parse_html()` function in `scraper.py` and update the CSS selectors to match the new structure
-
----
-
-## Dependencies
-
-| Package | Version | Purpose |
+| Variable | Required | Description |
 |---|---|---|
-| `python-telegram-bot` | 21.6 | Telegram Bot API wrapper |
-| `apscheduler` | 3.10.4 | Friday + daily midnight cron scheduler |
-| `requests` | 2.31.0 | HTTP fetch of NAC page |
-| `beautifulsoup4` | 4.12.3 | HTML parsing |
-| `pytz` | 2024.2 | SGT timezone handling |
+| `BOT_TOKEN` | Yes | Telegram bot token from @BotFather |
+| `CHAT_ID` | Yes | Telegram chat/group ID to post schedules to |
+| `ADMIN_IDS` | No | Comma-separated Telegram user IDs with access to admin commands |
+
+## Project Structure
+
+```
+mikew-gcal-v3/
+├── bot.py            Telegram bot + APScheduler (Friday 8 PM + daily midnight cron)
+├── scraper.py        HTTP scraper (requests + BeautifulSoup)
+├── overrides.py      Schedule override management (add/remove/modify shows)
+├── health.py         Flask health check and status page (port 8080)
+├── requirements.txt  Python dependencies
+├── Dockerfile        Container definition
+├── zeabur.json       Zeabur deployment config
+└── .env.example      Environment variable template
+```
+
+## Deployment
+
+Deployed on Zeabur via Docker. Push to `main` triggers a redeploy. The container exposes port 8080 for the health check endpoint (`/healthz`) and a branded status page (`/`).
+
+## Status / Roadmap
+
+- [x] NAC scraper with pagination
+- [x] Friday auto-post (next week's schedule)
+- [x] Daily midnight auto-post (today's schedule)
+- [x] Admin override commands
+- [x] Health check + status page
+- [x] Deployed on Zeabur
+- [ ] Cancellation detection / change alerts
+
+## Changelog
+
+- **Apr 2026** — Fixed HTML parse mode escaping for angle brackets in admin command examples; fixed missing module import in Docker build
+- **Apr 2026** — Added Flask health check server (`/healthz` + `/`) with TheBooleanJulian branded status page; added admin commands (`/addshow`, `/removeshow`, `/modifyshow`, `/overrides`, `/clearoverride`) and schedule overrides system; improved `.env.example` and inline documentation
+- **Mar 2026** — Fixed duplicate auto-posts on redeploy using `misfire_grace_time` and `max_instances`; added copyright and disclaimer to all files and bot messages
+- **Mar 2026** — Fixed today's date resolving in SGT (was using server local timezone); added signature line to all schedule message outputs
+- **Mar 2026** — Added `/today` command and daily midnight auto-post; renamed `/schedule` to `/thisweek`; updated `/start` text
+- **Mar 2026** — Initial working bot: `bot.py`, scraper with pagination fix, NAC events endpoint
+
+## License
+
+Copyright © 2026 TheBooleanJulian. All rights reserved. Unauthorised redistribution or commercial use of this code is prohibited.
+
+---
+
+<div align="center">
+<sub>Built by <a href="https://github.com/TheBooleanJulian">@TheBooleanJulian</a></sub>
+</div>

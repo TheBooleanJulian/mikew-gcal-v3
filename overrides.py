@@ -2,7 +2,7 @@
 overrides.py — Manual schedule overrides for MikewNACBot
 
 Copyright © 2026 TheBooleanJulian. All rights reserved.
-Disclaimer: Built and maintained by Kew's tech team. Not affiliated with NAC or any government entity.
+Disclaimer: Built and maintained by TheBooleanJulian. Not affiliated with NAC or any government entity.
 
 Stores a JSON file of admin-defined additions, removals, and modifications
 that are applied on top of the NAC-scraped events before display.

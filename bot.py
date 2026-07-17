@@ -2,7 +2,7 @@
 bot.py — Telegram bot for MikewNACBot
 
 Copyright © 2026 TheBooleanJulian. All rights reserved.
-Disclaimer: Built and maintained by Kew's tech team. Not affiliated with NAC or any government entity.
+Disclaimer: Built and maintained by TheBooleanJulian. Not affiliated with NAC or any government entity.
 
 Commands:
   /thisweek      → this week's schedule (Mon–Sun)
@@ -169,7 +169,7 @@ async def cmd_help(update: Update, context: ContextTypes.DEFAULT_TYPE):
         "/modifyshow &lt;date&gt; &lt;start&gt; &lt;end&gt; &lt;location...&gt; — modify timing\n"
         "/overrides — list all active overrides\n"
         "/clearoverride &lt;id&gt; — remove specific override\n\n"
-        "⚠️ Disclaimer: This bot is built and maintained by Kew's tech team. Not affiliated with or endorsed by NAC or any government entity. "
+        "⚠️ Disclaimer: This bot is built and maintained by TheBooleanJulian. Not affiliated with or endorsed by NAC or any government entity. "
         "Schedule data is sourced from NAC eServices and may not always be accurate — always verify with Kew or NAC directly.\n"
         "© 2026 TheBooleanJulian",
         parse_mode="HTML"

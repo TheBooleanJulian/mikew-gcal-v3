@@ -2,7 +2,7 @@
 scraper.py — NAC busking schedule scraper for FattKew / OneBoyBand
 
 Copyright © 2026 TheBooleanJulian. All rights reserved.
-Disclaimer: Built and maintained by Kew's tech team. Not affiliated with NAC or any government entity.
+Disclaimer: Built and maintained by TheBooleanJulian. Not affiliated with NAC or any government entity.
 
 HTML structure (confirmed from real page source):
 
@@ -334,7 +334,7 @@ def consolidate_events(events: list[BuskEvent]) -> list[BuskEvent]:
 _SIGNATURE = (
     "\n\n—\n"
     "🎸 Mikew Community Hub: https://t.me/mikewmikewbeam\n"
-    "⚠️ Built by Kew's tech team · Not affiliated with NAC · © 2026 TheBooleanJulian"
+    "⚠️ Built by TheBooleanJulian · Not affiliated with NAC · © 2026 TheBooleanJulian"
 )
 
 def build_day_message(events: list[BuskEvent], day: date, nac_url: str) -> str:
